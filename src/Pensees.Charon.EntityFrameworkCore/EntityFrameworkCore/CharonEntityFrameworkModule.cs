@@ -1,4 +1,5 @@
-﻿using Abp.EntityFrameworkCore.Configuration;
+﻿using System.Transactions;
+using Abp.EntityFrameworkCore.Configuration;
 using Abp.Modules;
 using Abp.Reflection.Extensions;
 using Abp.Zero.EntityFrameworkCore;
@@ -18,6 +19,8 @@ namespace Pensees.Charon.EntityFrameworkCore
 
         public override void PreInitialize()
         {
+            Configuration.UnitOfWork.IsolationLevel = IsolationLevel.ReadCommitted;
+
             if (!SkipDbContextRegistration)
             {
                 Configuration.Modules.AbpEfCore().AddDbContext<CharonDbContext>(options =>

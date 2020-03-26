@@ -159,6 +159,7 @@ namespace Pensees.Charon.Users
         }
 
         [HttpPost]
+        [AbpAllowAnonymous]
         public async Task<ListResultDto<string>> GetPermissions(GetPermissionsDto input)
         {
             using (_unitOfWorkManager.Current.SetTenantId(input.TenantId))
