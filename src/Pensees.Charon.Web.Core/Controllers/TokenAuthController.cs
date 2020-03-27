@@ -13,10 +13,12 @@ using Abp.Runtime.Security;
 using Abp.UI;
 using Pensees.Charon.Authentication.External;
 using Pensees.Charon.Authentication.JwtBearer;
+using Pensees.Charon.Authentication.Sms;
 using Pensees.Charon.Authorization;
 using Pensees.Charon.Authorization.Users;
 using Pensees.Charon.Models.TokenAuth;
 using Pensees.Charon.MultiTenancy;
+using Pensees.Charon.Validation;
 
 namespace Pensees.Charon.Controllers
 {
@@ -30,6 +32,7 @@ namespace Pensees.Charon.Controllers
         private readonly IExternalAuthConfiguration _externalAuthConfiguration;
         private readonly IExternalAuthManager _externalAuthManager;
         private readonly UserRegistrationManager _userRegistrationManager;
+        private readonly SmsAuthManager _smsAuthManager;
 
         public TokenAuthController(
             LogInManager logInManager,
@@ -38,7 +41,8 @@ namespace Pensees.Charon.Controllers
             TokenAuthConfiguration configuration,
             IExternalAuthConfiguration externalAuthConfiguration,
             IExternalAuthManager externalAuthManager,
-            UserRegistrationManager userRegistrationManager)
+            UserRegistrationManager userRegistrationManager,
+            SmsAuthManager smsAuthManager)
         {
             _logInManager = logInManager;
             _tenantCache = tenantCache;
@@ -47,7 +51,7 @@ namespace Pensees.Charon.Controllers
             _externalAuthConfiguration = externalAuthConfiguration;
             _externalAuthManager = externalAuthManager;
             _userRegistrationManager = userRegistrationManager;
-
+            _smsAuthManager = smsAuthManager;
         }
 
         [HttpPost]
@@ -60,7 +64,13 @@ namespace Pensees.Charon.Controllers
                 GetTenancyNameOrNull()
             );
 
-            var accessToken = CreateAccessToken(CreateJwtClaims(loginResult.Identity));
+            int? tenantId = null;
+            if (loginResult.Tenant != null)
+            {
+                tenantId = loginResult.Tenant.Id;
+            }
+
+            var accessToken = CreateAccessToken(CreateJwtClaims(loginResult.Identity, tenantId));
 
             return new AuthenticateResultModel
             {
@@ -69,6 +79,28 @@ namespace Pensees.Charon.Controllers
                 ExpireInSeconds = (int)_configuration.Expiration.TotalSeconds,
                 UserId = loginResult.User.Id
             };
+        }
+
+        [HttpGet]
+        public async Task GetSmsAuthenticationCode(string phoneNumber)
+        {
+            if (!ValidationHelper.IsMobilePhone(phoneNumber))
+            {
+                throw new UserFriendlyException("Invalid mobile phone number.");
+            }
+
+            string authCode = await _smsAuthManager.GetSmsAuthCodeAsync(phoneNumber);
+        }
+
+        [HttpGet]
+        public async Task<bool> AuthenticateSmsCode(string phoneNumber, string smsAuthCode)
+        {
+            if (!ValidationHelper.IsMobilePhone(phoneNumber))
+            {
+                throw new UserFriendlyException("Invalid mobile phone number.");
+            }
+
+            return await _smsAuthManager.AuthenticateSmsCode(phoneNumber, smsAuthCode);
         }
 
         [HttpGet]
@@ -84,11 +116,17 @@ namespace Pensees.Charon.Controllers
 
             var loginResult = await _logInManager.LoginAsync(new UserLoginInfo(model.AuthProvider, model.ProviderKey, model.AuthProvider), GetTenancyNameOrNull());
 
+            int? tenantId = null;
+            if (loginResult.Tenant != null)
+            {
+                tenantId = loginResult.Tenant.Id;
+            }
+
             switch (loginResult.Result)
             {
                 case AbpLoginResultType.Success:
                     {
-                        var accessToken = CreateAccessToken(CreateJwtClaims(loginResult.Identity));
+                        var accessToken = CreateAccessToken(CreateJwtClaims(loginResult.Identity, tenantId));
                         return new ExternalAuthenticateResultModel
                         {
                             AccessToken = accessToken,
@@ -120,7 +158,7 @@ namespace Pensees.Charon.Controllers
 
                         return new ExternalAuthenticateResultModel
                         {
-                            AccessToken = CreateAccessToken(CreateJwtClaims(loginResult.Identity)),
+                            AccessToken = CreateAccessToken(CreateJwtClaims(loginResult.Identity, tenantId)),
                             ExpireInSeconds = (int)_configuration.Expiration.TotalSeconds
                         };
                     }
@@ -211,17 +249,24 @@ namespace Pensees.Charon.Controllers
             return new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
         }
 
-        private static List<Claim> CreateJwtClaims(ClaimsIdentity identity)
+        private static List<Claim> CreateJwtClaims(ClaimsIdentity identity, int? tenantId)
         {
             var claims = identity.Claims.ToList();
             var nameIdClaim = claims.First(c => c.Type == ClaimTypes.NameIdentifier);
+
+            string tenantIdStr = "null";
+            if (tenantId.HasValue)
+            {
+                tenantIdStr = tenantId.ToString();
+            }
 
             // Specifically add the jti (random nonce), iat (issued timestamp), and sub (subject/user) claims.
             claims.AddRange(new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, nameIdClaim.Value),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.Now.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+                new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.Now.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+                new Claim("tenantId", tenantIdStr)
             });
 
             return claims;

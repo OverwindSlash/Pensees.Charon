@@ -10,6 +10,9 @@ namespace Pensees.Charon.Users.Dto
     [AutoMapFrom(typeof(User))]
     public class UserDto : EntityDto<long>
     {
+        private const string EmailDomain = @"@pensees.ai";
+        private string _emailAddress;
+
         [Required]
         [StringLength(AbpUserBase.MaxUserNameLength)]
         public string UserName { get; set; }
@@ -23,9 +26,17 @@ namespace Pensees.Charon.Users.Dto
         public string Surname { get; set; }
 
         [Required]
+        [StringLength(AbpUserBase.MaxPhoneNumberLength)]
+        public string PhoneNumber { get; set; }
+
+        //[Required]
         [EmailAddress]
         [StringLength(AbpUserBase.MaxEmailAddressLength)]
-        public string EmailAddress { get; set; }
+        public string EmailAddress
+        {
+            get => string.IsNullOrEmpty(_emailAddress) ? (PhoneNumber + EmailDomain) : _emailAddress;
+            set => _emailAddress = value;
+        }
 
         public bool IsActive { get; set; }
 

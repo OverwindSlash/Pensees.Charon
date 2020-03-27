@@ -13,6 +13,7 @@ using Pensees.Charon.Authentication.JwtBearer;
 using Pensees.Charon.Configuration;
 using Pensees.Charon.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
+using Pensees.Charon.Authentication.Sms;
 
 namespace Pensees.Charon
 {
@@ -48,6 +49,20 @@ namespace Pensees.Charon
                  );
 
             ConfigureTokenAuth();
+
+            // For sms auth code expire.
+            Configuration.Caching.Configure(SmsAuthManager.SmsAuthCodeCacheName, cache =>
+            {
+                var value = _appConfiguration["SmsAuthCode:ExpireMinutes"];
+
+                int expire = 5;
+                if (Int32.TryParse(value, out var result))
+                {
+                    expire = result;
+                }
+
+                cache.DefaultSlidingExpireTime = TimeSpan.FromMinutes(expire);
+            });
         }
 
         private void ConfigureTokenAuth()

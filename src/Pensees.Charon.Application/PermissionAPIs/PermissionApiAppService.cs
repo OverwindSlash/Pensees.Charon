@@ -36,10 +36,9 @@ namespace Pensees.Charon.PermissionAPIs
             _getServiceUrlPattern = string.Format(GetServiceUrlPart, _address) + "{0}";
         }
 
-        [AbpAuthorize]
         public async Task AddAnonymousRouteAsync(SetAnonymousDto setAnonymousDto)
         {
-            if (!CheckServiceExistence(setAnonymousDto.ServiceName))
+            if ((setAnonymousDto.Urls == null) || (!CheckServiceExistence(setAnonymousDto.ServiceName)))
             {
                 return;
             }
@@ -134,10 +133,9 @@ namespace Pensees.Charon.PermissionAPIs
             var response = client.Patch(request);
         }
 
-        [AbpAuthorize]
         public async Task RemoveAnonymousRouteAsync(SetAnonymousDto setAnonymousDto)
         {
-            if (!CheckServiceExistence(setAnonymousDto.ServiceName))
+            if ((setAnonymousDto.Urls == null) || (!CheckServiceExistence(setAnonymousDto.ServiceName)))
             {
                 return;
             }
