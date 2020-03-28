@@ -18,6 +18,7 @@ using Abp.Dependency;
 using Abp.Json;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json.Serialization;
+using Microsoft.Extensions.PlatformAbstractions;
 
 namespace Pensees.Charon.Web.Host.Startup
 {
@@ -87,6 +88,15 @@ namespace Pensees.Charon.Web.Host.Startup
                     In = ParameterLocation.Header,
                     Type = SecuritySchemeType.ApiKey
                 });
+            });
+
+            services.ConfigureSwaggerGen(options =>
+            {
+                //Determine base path for the application.
+                var basePath = PlatformServices.Default.Application.ApplicationBasePath;
+
+                //Set the comments path for the swagger json and ui.
+                options.IncludeXmlComments(basePath + "\\Pensees.Charon.Application.xml");
             });
 
             // Configure Abp and Dependency Injection

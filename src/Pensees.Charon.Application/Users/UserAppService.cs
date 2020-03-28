@@ -25,6 +25,7 @@ using Pensees.Charon.Users.Dto;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Pensees.Charon.Authorization.AuthCode;
 
 namespace Pensees.Charon.Users
 {
@@ -39,6 +40,7 @@ namespace Pensees.Charon.Users
         private readonly IAbpSession _abpSession;
         private readonly IUnitOfWorkManager _unitOfWorkManager;
         private readonly LogInManager _logInManager;
+        private readonly SmsAuthManager _smsAuthManager;
 
         public UserAppService(
             IRepository<User, long> repository,
@@ -49,7 +51,8 @@ namespace Pensees.Charon.Users
             IPasswordHasher<User> passwordHasher,
             IAbpSession abpSession,
             IUnitOfWorkManager unitOfWorkManager,
-            LogInManager logInManager)
+            LogInManager logInManager,
+            SmsAuthManager smsAuthManager)
             : base(repository)
         {
             _userManager = userManager;
@@ -60,8 +63,14 @@ namespace Pensees.Charon.Users
             _abpSession = abpSession;
             _unitOfWorkManager = unitOfWorkManager;
             _logInManager = logInManager;
+            _smsAuthManager = smsAuthManager;
         }
 
+        /// <summary>
+        /// 创建用户
+        /// </summary>
+        /// <param name="input">创建用户所需Dto</param>
+        /// <returns>已创建用户的Dto</returns>
         public override async Task<UserDto> CreateAsync(CreateUserDto input)
         {
             CheckCreatePermission();
@@ -257,7 +266,7 @@ namespace Pensees.Charon.Users
             return true;
         }
 
-        public async Task<bool> ResetPassword(ResetPasswordDto input)
+        public async Task<bool> ResetPasswordByAdmin(ResetPasswordDto input)
         {
             if (_abpSession.UserId == null)
             {
@@ -287,6 +296,29 @@ namespace Pensees.Charon.Users
                 CurrentUnitOfWork.SaveChanges();
             }
 
+            return true;
+        }
+
+        public async Task<bool> ResetSelfPasswordBySms(SmsResetPasswordDto input)
+        {
+            if (! await _smsAuthManager.AuthenticateSmsCode(input.PhoneNumber, input.AutoCode))
+            {
+                throw new UserFriendlyException("Wrong authentication code.");
+            }
+
+            var user = await _userManager.GetUserByIdAsync(input.UserId);
+            if (user == null)
+            {
+                throw new UserFriendlyException("User not exist.");
+            }
+
+            if (user.PhoneNumber != input.PhoneNumber)
+            {
+                throw new UserFriendlyException("Wrong mobile phone number.");
+            }
+
+            user.Password = _passwordHasher.HashPassword(user, input.NewPassword);
+            CurrentUnitOfWork.SaveChanges();
             return true;
         }
     }

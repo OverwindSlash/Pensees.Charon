@@ -13,7 +13,7 @@ using Pensees.Charon.Authentication.JwtBearer;
 using Pensees.Charon.Configuration;
 using Pensees.Charon.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
-using Pensees.Charon.Authentication.Sms;
+using Pensees.Charon.Authorization.AuthCode;
 
 namespace Pensees.Charon
 {

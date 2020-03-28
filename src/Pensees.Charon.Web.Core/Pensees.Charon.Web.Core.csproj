@@ -17,6 +17,12 @@
     <RootNamespace>Pensees.Charon</RootNamespace>
     <LangVersion>7.2</LangVersion>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>D:\Workspace\Formal\Pensees.Charon\aspnet-core\src\Pensees.Charon.Web.Core\Pensees.Charon.Web.Core.xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>D:\Workspace\Formal\Pensees.Charon\aspnet-core\src\Pensees.Charon.Web.Core\Pensees.Charon.Web.Core.xml</DocumentationFile>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Pensees.Charon.Application\Pensees.Charon.Application.csproj" />
     <ProjectReference Include="..\Pensees.Charon.EntityFrameworkCore\Pensees.Charon.EntityFrameworkCore.csproj" />

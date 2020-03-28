@@ -1,40 +1,41 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using Abp.Dependency;
+using Abp.Domain.Services;
+using Abp.Reflection.Extensions;
 using Abp.Runtime.Caching;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Pensees.Charon.Configuration;
+using RestSharp;
 
-namespace Pensees.Charon.Authentication.Sms
+namespace Pensees.Charon.Authorization.AuthCode
 {
     public class SmsAuthManager : ISingletonDependency
     {
         public static string SmsAuthCodeCacheName = "SmsAuthCode";
         private const string SmsAuthCodeRetryTimesKey = ":Retried";
+        private const string SmsSendApiName = "/sms/sendPinCode";
 
         private readonly ICacheManager _cacheManager;
         private readonly IConfigurationRoot _configuration;
         private readonly int _maxRetryTimes;
+        private readonly string _smsServerUri;
         private readonly Random _random;
 
-        public SmsAuthManager(
-            ICacheManager cacheManager,
-            IWebHostEnvironment env)
+        public SmsAuthManager(ICacheManager cacheManager)
         {
             _cacheManager = cacheManager;
-            _configuration = env.GetAppConfiguration();
             _random = new Random();
+            _configuration = AppConfigurations.Get(typeof(CharonCoreModule).GetAssembly().GetDirectoryPathOrNull());
 
             var value = _configuration["SmsAuthCode:MaxRetryTimes"];
-
             int _maxRetryTimes = 3;
             if (Int32.TryParse(value, out var result))
             {
                 _maxRetryTimes = result;
             }
+
+            _smsServerUri = _configuration["SmsAuthCode:SmsServerAddress"];
         }
 
         public async Task<string> GetSmsAuthCodeAsync(string phoneNumber)
@@ -55,7 +56,20 @@ namespace Pensees.Charon.Authentication.Sms
 
         private void SendAuthCodeSms(string phoneNumber, string authCode)
         {
-            // TODO: Real send message logic.
+            string smsUri = _smsServerUri.Trim('/') + SmsSendApiName;
+
+            var client = new RestClient(smsUri);
+            IRestRequest request = new RestRequest();
+
+            var param = new
+            {
+                phoneNumber = phoneNumber,
+                pinCode = authCode
+            };
+
+            request.AddJsonBody(param);
+
+            var response = client.Post(request);
         }
 
         public async Task<bool> AuthenticateSmsCode(string phoneNumber, string smsAuthCode)
