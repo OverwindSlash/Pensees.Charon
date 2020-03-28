@@ -18,6 +18,7 @@ namespace Pensees.Charon.Authentication.Sms
         private readonly ICacheManager _cacheManager;
         private readonly IConfigurationRoot _configuration;
         private readonly int _maxRetryTimes;
+        private readonly Random _random;
 
         public SmsAuthManager(
             ICacheManager cacheManager,
@@ -25,6 +26,7 @@ namespace Pensees.Charon.Authentication.Sms
         {
             _cacheManager = cacheManager;
             _configuration = env.GetAppConfiguration();
+            _random = new Random();
 
             var value = _configuration["SmsAuthCode:MaxRetryTimes"];
 
@@ -46,7 +48,14 @@ namespace Pensees.Charon.Authentication.Sms
             string retryKey = phoneNumber + SmsAuthCodeRetryTimesKey;
             await smsAuthCache.SetAsync(retryKey, 0);
 
+            SendAuthCodeSms(phoneNumber, authCode);
+
             return authCode;
+        }
+
+        private void SendAuthCodeSms(string phoneNumber, string authCode)
+        {
+            // TODO: Real send message logic.
         }
 
         public async Task<bool> AuthenticateSmsCode(string phoneNumber, string smsAuthCode)
@@ -59,7 +68,7 @@ namespace Pensees.Charon.Authentication.Sms
             // Not get sms auth code yet, or retry times reach limitation.
             if (string.IsNullOrEmpty(authCode))
             {
-                // TODO: If there is a better way to determind existence of a key
+                // TODO: If there is a better way to determine existence of a key
                 await smsAuthCache.RemoveAsync(phoneNumber);
                 return false;
             }
@@ -98,7 +107,8 @@ namespace Pensees.Charon.Authentication.Sms
 
         private Task<string> GenerateSmsAuthCode()
         {
-            return Task.FromResult("123456");
+            int randomCode = _random.Next(100000, 999999);
+            return Task.FromResult(randomCode.ToString());
         }
     }
 }
