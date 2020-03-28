@@ -91,7 +91,7 @@ namespace Pensees.Charon.PermissionAPIs
 
             jwtId = data[0]["id"].ToString();
 
-            return config["anonymous"].ToString();
+            return config["anonymous"] != null ? config["anonymous"].ToString() : string.Empty;
         }
 
         private static string GenerateNewAnonymous(string existAnonymous, List<string> urls, bool addMode)

@@ -11,7 +11,7 @@
     <RootNamespace>Pensees.Charon</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>D:\Workspace\Formal\Pensees.Charon\aspnet-core\src\Pensees.Charon.Application\Pensees.Charon.Application.xml</DocumentationFile>
+    <DocumentationFile></DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="RestSharp" Version="106.10.1" />
