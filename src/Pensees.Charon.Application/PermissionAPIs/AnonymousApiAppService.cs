@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Pensees.Charon.PermissionAPIs
 {
-    public class PermissionApiAppService : IPermissionApiAppService
+    public class AnonymousApiAppService : IAnonymousApiAppService
     {
         private const string GetServiceUrlPart = @"{0}/services/";
 
@@ -26,7 +26,7 @@ namespace Pensees.Charon.PermissionAPIs
         private string _jwtAnonymousUrl;
 
 
-        public PermissionApiAppService()
+        public AnonymousApiAppService()
         {
             _configurationRoot = AppConfigurations.Get(
                 typeof(CharonApplicationModule).GetAssembly().GetDirectoryPathOrNull());
@@ -147,28 +147,39 @@ namespace Pensees.Charon.PermissionAPIs
             SetJwtAnonymous(jwtId, newAnonymous);
         }
 
-        [AbpAuthorize]
-        public Task DoNoPermissionWork()
+        public async Task ResetAnonymousRouteAsync(ResetAnonymousDto resetAnonymousDto)
         {
-            return Task.CompletedTask;
+            if (!CheckServiceExistence(resetAnonymousDto.ServiceName))
+            {
+                return;
+            }
+
+            string existAnonymous = GetJwtIdAndAnonymous(out var jwtId);
+            SetJwtAnonymous(jwtId, string.Empty);
         }
 
-        [AbpAuthorize("VideoControl.View")]
-        public Task DoVideoViewPermissionWork()
-        {
-            return Task.CompletedTask;
-        }
+        //[AbpAuthorize]
+        //public Task DoNoPermissionWork()
+        //{
+        //    return Task.CompletedTask;
+        //}
 
-        [AbpAuthorize("ServiceInvoke.Get")]
-        public Task DoServiceGetPermissionWork()
-        {
-            return Task.CompletedTask;
-        }
+        //[AbpAuthorize("VideoControl.View")]
+        //public Task DoVideoViewPermissionWork()
+        //{
+        //    return Task.CompletedTask;
+        //}
 
-        [AbpAuthorize("ServiceInvoke.Post")]
-        public Task DoServicePostPermissionWork()
-        {
-            return Task.CompletedTask;
-        }
+        //[AbpAuthorize("ServiceInvoke.Get")]
+        //public Task DoServiceGetPermissionWork()
+        //{
+        //    return Task.CompletedTask;
+        //}
+
+        //[AbpAuthorize("ServiceInvoke.Post")]
+        //public Task DoServicePostPermissionWork()
+        //{
+        //    return Task.CompletedTask;
+        //}
     }
 }

@@ -7,18 +7,20 @@ using Pensees.Charon.PermissionAPIs.Dto;
 
 namespace Pensees.Charon.PermissionAPIs
 {
-    public interface IPermissionApiAppService : IApplicationService
+    public interface IAnonymousApiAppService : IApplicationService
     {
         public Task AddAnonymousRouteAsync(SetAnonymousDto setAnonymousDto);
 
         public Task RemoveAnonymousRouteAsync(SetAnonymousDto setAnonymousDto);
 
-        public Task DoNoPermissionWork();
+        public Task ResetAnonymousRouteAsync(ResetAnonymousDto resetAnonymousDto);
 
-        public Task DoVideoViewPermissionWork();
+        //public Task DoNoPermissionWork();
 
-        public Task DoServiceGetPermissionWork();
+        //public Task DoVideoViewPermissionWork();
 
-        public Task DoServicePostPermissionWork();
+        //public Task DoServiceGetPermissionWork();
+
+        //public Task DoServicePostPermissionWork();
     }
 }

@@ -1,8 +1,10 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using Abp.Application.Services.Dto;
 using Abp.Authorization.Users;
 using Abp.AutoMapper;
+using Microsoft.EntityFrameworkCore.Internal;
 using Pensees.Charon.Authorization.Users;
 
 namespace Pensees.Charon.Users.Dto
@@ -49,5 +51,7 @@ namespace Pensees.Charon.Users.Dto
         public string[] RoleNames { get; set; }
 
         public string[] OrgUnitNames { get; set; }
+
+        public bool IsAdmin { get => RoleNames.Contains("ADMIN"); }
     }
 }

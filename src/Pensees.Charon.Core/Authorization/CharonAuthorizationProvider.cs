@@ -13,18 +13,22 @@ namespace Pensees.Charon.Authorization
             context.CreatePermission(PermissionNames.Pages_Roles, L("Roles"));
             context.CreatePermission(PermissionNames.Pages_Tenants, L("Tenants"), multiTenancySides: MultiTenancySides.Host);
 
+            // Business
+            var smartSecurityPermission = context.CreatePermission("SmartSecurity");
+            var smartPassPermission = context.CreatePermission("SmartPass");
+
             // Service Invoke
             var servicePermission = context.CreatePermission("ServiceInvoke");
-            servicePermission.CreateChildPermission("ServiceInvoke.Get");
-            servicePermission.CreateChildPermission("ServiceInvoke.Post");
-            servicePermission.CreateChildPermission("ServiceInvoke.Put");
-            servicePermission.CreateChildPermission("ServiceInvoke.Delete");
+            //servicePermission.CreateChildPermission("ServiceInvoke.Get");
+            //servicePermission.CreateChildPermission("ServiceInvoke.Post");
+            //servicePermission.CreateChildPermission("ServiceInvoke.Put");
+            //servicePermission.CreateChildPermission("ServiceInvoke.Delete");
 
             // Video Control
             var videoPermission = context.CreatePermission("VideoControl");
-            videoPermission.CreateChildPermission("VideoControl.View");
-            videoPermission.CreateChildPermission("VideoControl.Copy");
-            videoPermission.CreateChildPermission("VideoControl.Delete");
+            //videoPermission.CreateChildPermission("VideoControl.View");
+            //videoPermission.CreateChildPermission("VideoControl.Copy");
+            //videoPermission.CreateChildPermission("VideoControl.Delete");
         }
 
         private static ILocalizableString L(string name)

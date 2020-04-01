@@ -183,6 +183,8 @@ namespace Pensees.Charon.Users
                     permissions.AddRange(await _roleManager.GetGrantedPermissionsAsync(role.RoleId));
                 }
 
+                permissions = permissions.Distinct().ToList();
+
                 return new ListResultDto<string>(permissions.Select(p => p.Name).ToList());
             }
         }
@@ -202,12 +204,17 @@ namespace Pensees.Charon.Users
 
         protected override UserDto MapToEntityDto(User user)
         {
-            var roleIds = user.Roles.Select(x => x.RoleId).ToArray();
-
-            var roles = _roleManager.Roles.Where(r => roleIds.Contains(r.Id)).Select(r => r.NormalizedName);
-
             var userDto = base.MapToEntityDto(user);
-            userDto.RoleNames = roles.ToArray();
+
+            if (user.Roles != null)
+            {
+                var roleIds = user.Roles.Select(x => x.RoleId).ToArray();
+
+                var roles = _roleManager.Roles.Where(r => roleIds.Contains(r.Id)).Select(r => r.NormalizedName);
+
+                userDto.RoleNames = roles.ToArray();
+            }
+            
 
             var ous = _userManager.GetOrganizationUnits(user).Select(ou => ou.DisplayName);
             userDto.OrgUnitNames = ous.ToArray();
