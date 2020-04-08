@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Pensees.Charon.EntityFrameworkCore;
 
 namespace Pensees.Charon.Migrations
 {
     [DbContext(typeof(CharonDbContext))]
-    partial class CharonDbContextModelSnapshot : ModelSnapshot
+    [Migration("20200407072247_Add_OptionMember_To_User")]
+    partial class Add_OptionMember_To_User
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1511,10 +1513,6 @@ namespace Pensees.Charon.Migrations
                         .HasColumnType("varchar(1024) CHARACTER SET utf8mb4")
                         .HasMaxLength(1024);
 
-                    b.Property<string>("Contact")
-                        .HasColumnType("varchar(128) CHARACTER SET utf8mb4")
-                        .HasMaxLength(128);
-
                     b.Property<DateTime>("CreationTime")
                         .HasColumnType("datetime(6)");
 
@@ -1542,18 +1540,10 @@ namespace Pensees.Charon.Migrations
                     b.Property<long?>("LastModifierUserId")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("Logo")
-                        .HasColumnType("varchar(128) CHARACTER SET utf8mb4")
-                        .HasMaxLength(128);
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("varchar(128) CHARACTER SET utf8mb4")
                         .HasMaxLength(128);
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("varchar(32) CHARACTER SET utf8mb4")
-                        .HasMaxLength(32);
 
                     b.Property<string>("TenancyName")
                         .IsRequired()

@@ -27,9 +27,23 @@ namespace Pensees.Charon.Users.Dto
         [StringLength(AbpUserBase.MaxSurnameLength)]
         public string Surname { get; set; }
 
+        [MaxLength(2)]
+        public string Gender { get; set; }
+
+        [StringLength(18)]
+        public string IdNumber { get; set; }
+
         [Required]
         [StringLength(AbpUserBase.MaxPhoneNumberLength)]
         public string PhoneNumber { get; set; }
+
+        [StringLength(AbpUserBase.MaxPhoneNumberLength)]
+        public string OfficePhoneNumber { get; set; }
+
+        [MaxLength(10)]
+        public string City { get; set; }
+
+        public DateTime ExpireDate { get; set; }
 
         //[Required]
         [EmailAddress]
@@ -52,6 +66,18 @@ namespace Pensees.Charon.Users.Dto
 
         public string[] OrgUnitNames { get; set; }
 
-        public bool IsAdmin { get => RoleNames.Contains("ADMIN"); }
+        public bool IsAdmin
+        {
+            get
+            {
+                if (RoleNames != null)
+                {
+                    return RoleNames.Contains("ADMIN");
+                }
+
+                return false;
+            }
+
+        }
     }
 }

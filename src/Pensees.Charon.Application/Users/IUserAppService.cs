@@ -13,5 +13,7 @@ namespace Pensees.Charon.Users
         Task ChangeLanguage(ChangeUserLanguageDto input);
 
         Task<ListResultDto<string>> GetPermissions(GetPermissionsDto input);
+
+        Task<bool> ActivateUser(ActivateUserDto input);
     }
 }

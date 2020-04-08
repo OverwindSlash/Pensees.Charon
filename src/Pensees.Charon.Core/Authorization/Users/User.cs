@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using Abp.Authorization.Users;
 using Abp.Extensions;
 using Abp.Organizations;
@@ -31,5 +32,19 @@ namespace Pensees.Charon.Authorization.Users
 
             return user;
         }
+
+        [StringLength(AbpUserBase.MaxPhoneNumberLength)]
+        public string OfficePhoneNumber { get; set; }
+
+        [MaxLength(2)]
+        public string Gender { get; set; }
+
+        [StringLength(18)]
+        public string IdNumber { get; set; }
+
+        [MaxLength(10)]
+        public string City { get; set; }
+
+        public DateTime ExpireDate { get; set; }
     }
 }

@@ -8,9 +8,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Abp.Authorization;
 using Abp.Authorization.Users;
+using Abp.Domain.Repositories;
+using Abp.Domain.Uow;
 using Abp.MultiTenancy;
 using Abp.Runtime.Security;
 using Abp.UI;
+using Microsoft.EntityFrameworkCore;
 using Pensees.Charon.Authentication.External;
 using Pensees.Charon.Authentication.JwtBearer;
 using Pensees.Charon.Authorization;
@@ -33,6 +36,7 @@ namespace Pensees.Charon.Controllers
         private readonly IExternalAuthManager _externalAuthManager;
         private readonly UserRegistrationManager _userRegistrationManager;
         private readonly SmsAuthManager _smsAuthManager;
+        private readonly IRepository<User, long> _repository;
 
         public TokenAuthController(
             LogInManager logInManager,
@@ -42,7 +46,8 @@ namespace Pensees.Charon.Controllers
             IExternalAuthConfiguration externalAuthConfiguration,
             IExternalAuthManager externalAuthManager,
             UserRegistrationManager userRegistrationManager,
-            SmsAuthManager smsAuthManager)
+            SmsAuthManager smsAuthManager,
+            IRepository<User, long> repository)
         {
             _logInManager = logInManager;
             _tenantCache = tenantCache;
@@ -52,17 +57,60 @@ namespace Pensees.Charon.Controllers
             _externalAuthManager = externalAuthManager;
             _userRegistrationManager = userRegistrationManager;
             _smsAuthManager = smsAuthManager;
+            _repository = repository;
         }
 
         [HttpPost]
         public async Task<AuthenticateResultModel> Authenticate([FromBody] AuthenticateModel model)
         {
-            // TODO: Add tenant id parameter
             var loginResult = await GetLoginResultAsync(
                 model.UserNameOrEmailAddress,
                 model.Password,
                 GetTenancyNameOrNull()
             );
+
+            int? tenantId = null;
+            if (loginResult.Tenant != null)
+            {
+                tenantId = loginResult.Tenant.Id;
+            }
+
+            var accessToken = CreateAccessToken(CreateJwtClaims(loginResult.Identity, tenantId));
+
+            return new AuthenticateResultModel
+            {
+                AccessToken = accessToken,
+                EncryptedAccessToken = GetEncryptedAccessToken(accessToken),
+                ExpireInSeconds = (int)_configuration.Expiration.TotalSeconds,
+                UserId = loginResult.User.Id
+            };
+        }
+
+        [HttpPost]
+        public async Task<AuthenticateResultModel> AuthenticateWithSms([FromBody] SmsAuthenticateModel model)
+        {
+            string username = string.Empty;
+            string tenantName = string.Empty;
+            using (CurrentUnitOfWork.DisableFilter(AbpDataFilters.MayHaveTenant))
+            {
+                var user = await _repository.GetAll().SingleOrDefaultAsync(u => u.PhoneNumber == model.PhoneNumber);
+                if (user == null)
+                {
+                    throw new UserFriendlyException("Mobile phone number not exist.");
+                }
+                username = user.UserName;
+
+                if (user.TenantId.HasValue)
+                {
+                    tenantName = this._tenantCache.Get(user.TenantId.Value).TenancyName;
+                }
+            }
+
+            var loginResult = await GetLoginResultAsync(username, model.Password, tenantName);
+            if (! await AuthenticateSmsCode(model.PhoneNumber, model.SmsAuthCode))
+            {
+                throw new UserFriendlyException("Sms authentication code not correct!");
+            }
 
             int? tenantId = null;
             if (loginResult.Tenant != null)

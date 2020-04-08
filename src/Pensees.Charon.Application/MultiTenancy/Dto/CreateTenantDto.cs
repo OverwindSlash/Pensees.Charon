@@ -21,8 +21,17 @@ namespace Pensees.Charon.MultiTenancy.Dto
         [StringLength(AbpUserBase.MaxEmailAddressLength)]
         public string AdminEmailAddress { get; set; }
 
-        [StringLength(AbpTenantBase.MaxConnectionStringLength)]
-        public string ConnectionString { get; set; }
+        [StringLength(AbpTenantBase.MaxNameLength)]
+        public string Logo { get; set; }
+
+        [StringLength(AbpTenantBase.MaxNameLength)]
+        public string Contact { get; set; }
+
+        [StringLength(AbpUserBase.MaxPhoneNumberLength)]
+        public string PhoneNumber { get; set; }
+
+        //[StringLength(AbpTenantBase.MaxConnectionStringLength)]
+        //public string ConnectionString { get; set; }
 
         public bool IsActive {get; set;}
     }

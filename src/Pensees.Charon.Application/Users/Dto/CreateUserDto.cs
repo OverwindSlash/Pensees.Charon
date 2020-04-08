@@ -1,3 +1,5 @@
+using System;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using Abp.Auditing;
 using Abp.Authorization.Users;
@@ -14,6 +16,11 @@ namespace Pensees.Charon.Users.Dto
         private const string EmailDomain = @"@pensees.ai";
         private string _emailAddress;
 
+        public CreateUserDto()
+        {
+            ExpireDate = DateTime.MaxValue;
+        }
+
         [Required]
         [StringLength(AbpUserBase.MaxUserNameLength)]
         public string UserName { get; set; }
@@ -26,9 +33,21 @@ namespace Pensees.Charon.Users.Dto
         [StringLength(AbpUserBase.MaxSurnameLength)]
         public string Surname { get; set; }
 
+        [MaxLength(2)]
+        public string Gender { get; set; }
+
+        [StringLength(18)]
+        public string IdNumber { get; set; }
+        
         [Required]
         [StringLength(AbpUserBase.MaxPhoneNumberLength)]
         public string PhoneNumber { get; set; }
+
+        [StringLength(AbpUserBase.MaxPhoneNumberLength)]
+        public string OfficePhoneNumber { get; set; }
+
+        [MaxLength(10)]
+        public string City { get; set; }
 
         //[Required]
         [EmailAddress]
@@ -49,6 +68,8 @@ namespace Pensees.Charon.Users.Dto
         [StringLength(AbpUserBase.MaxPlainPasswordLength)]
         [DisableAuditing]
         public string Password { get; set; }
+
+        public DateTime ExpireDate { get; set; }
 
         public void Normalize()
         {

@@ -49,9 +49,9 @@ namespace Pensees.Charon.MultiTenancy
 
             // Create tenant
             var tenant = ObjectMapper.Map<Tenant>(input);
-            tenant.ConnectionString = input.ConnectionString.IsNullOrEmpty()
-                ? null
-                : SimpleStringCipher.Instance.Encrypt(input.ConnectionString);
+            // tenant.ConnectionString = input.ConnectionString.IsNullOrEmpty()
+            //     ? null
+            //     : SimpleStringCipher.Instance.Encrypt(input.ConnectionString);
 
             var defaultEdition = await _editionManager.FindByNameAsync(EditionManager.DefaultEditionName);
             if (defaultEdition != null)
@@ -112,6 +112,21 @@ namespace Pensees.Charon.MultiTenancy
 
             var tenant = await _tenantManager.GetByIdAsync(input.Id);
             await _tenantManager.DeleteAsync(tenant);
+        }
+
+        public async Task<bool> ActivateTenant(ActivateTenantDto input)
+        {
+            var tenant = await Repository.GetAsync(input.TenantId);
+            if (tenant == null)
+            {
+                return false;
+            }
+
+            tenant.IsActive = input.IsActive;
+
+            await _tenantManager.UpdateAsync(tenant);
+
+            return true;
         }
 
         private void CheckErrors(IdentityResult identityResult)

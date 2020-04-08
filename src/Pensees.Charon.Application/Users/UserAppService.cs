@@ -189,6 +189,22 @@ namespace Pensees.Charon.Users
             }
         }
 
+        [HttpPut]
+        public async Task<bool> ActivateUser(ActivateUserDto input)
+        {
+            var user = await Repository.GetAsync(input.UserId);
+            if (user == null)
+            {
+                return false;
+            }
+
+            user.IsActive = input.IsActive;
+
+            CheckErrors(await _userManager.UpdateAsync(user));
+
+            return true;
+        }
+
         protected override User MapToEntity(CreateUserDto createInput)
         {
             var user = ObjectMapper.Map<User>(createInput);
@@ -279,6 +295,7 @@ namespace Pensees.Charon.Users
             {
                 throw new UserFriendlyException("Please log in before attemping to reset password.");
             }
+
             long currentUserId = _abpSession.UserId.Value;
             var currentUser = await _userManager.GetUserByIdAsync(currentUserId);
             var loginAsync = await _logInManager.LoginAsync(currentUser.UserName, input.AdminPassword, shouldLockout: false);
