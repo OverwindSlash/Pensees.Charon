@@ -312,7 +312,7 @@
         <member name="F:Pensees.Charon.Net.MimeTypes.MimeTypeNames.ApplicationZip">
             <summary>ZIP archive files; Registered[7]</summary>
         </member>
-        <member name="M:Pensees.Charon.Users.UserAppService.CreateAsync(Pensees.Charon.Users.Dto.CreateUserDto)">
+        <member name="M:Pensees.Charon.Users.UserAppService.CreateTenantAsync(Pensees.Charon.Users.Dto.CreateUserDto)">
             <summary>
             创建用户
             </summary>

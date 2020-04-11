@@ -5,7 +5,7 @@ using Abp.Authorization;
 namespace Pensees.Charon.Roles.Dto
 {
     [AutoMapFrom(typeof(Permission))]
-    public class PermissionDto : EntityDto<long>
+    public class PermissionDto
     {
         public string Name { get; set; }
 

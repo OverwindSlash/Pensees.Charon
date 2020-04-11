@@ -1,6 +1,4 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
-using Abp.Application.Services;
+﻿using Abp.Application.Services;
 using Abp.Application.Services.Dto;
 using Abp.Authorization;
 using Abp.Domain.Repositories;
@@ -8,13 +6,14 @@ using Abp.Extensions;
 using Abp.IdentityFramework;
 using Abp.Linq.Extensions;
 using Abp.MultiTenancy;
-using Abp.Runtime.Security;
+using Microsoft.AspNetCore.Identity;
 using Pensees.Charon.Authorization;
 using Pensees.Charon.Authorization.Roles;
 using Pensees.Charon.Authorization.Users;
 using Pensees.Charon.Editions;
 using Pensees.Charon.MultiTenancy.Dto;
-using Microsoft.AspNetCore.Identity;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Pensees.Charon.MultiTenancy
 {

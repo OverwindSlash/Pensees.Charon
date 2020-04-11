@@ -1,6 +1,8 @@
-﻿using Abp.Authorization;
+﻿using Abp.Application.Features;
+using Abp.Authorization;
 using Abp.Localization;
 using Abp.MultiTenancy;
+using Pensees.Charon.Features;
 
 namespace Pensees.Charon.Authorization
 {
@@ -14,8 +16,11 @@ namespace Pensees.Charon.Authorization
             context.CreatePermission(PermissionNames.Pages_Tenants, L("Tenants"), multiTenancySides: MultiTenancySides.Host);
 
             // Business
-            var smartSecurityPermission = context.CreatePermission("SmartSecurity");
-            var smartPassPermission = context.CreatePermission("SmartPass");
+            var smartSecurityPermission = context.CreatePermission("SmartSecurity", 
+                featureDependency: new SimpleFeatureDependency(PesCloudFeatureProvider.SmartSecurityFeature));
+
+            var smartPassPermission = context.CreatePermission("SmartPass",
+                featureDependency: new SimpleFeatureDependency(PesCloudFeatureProvider.SmartPassFeature));
 
             // Service Invoke
             var servicePermission = context.CreatePermission("ServiceInvoke");

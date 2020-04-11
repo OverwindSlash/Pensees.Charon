@@ -6,6 +6,7 @@ using Abp.Zero.Configuration;
 using Pensees.Charon.Authorization.Roles;
 using Pensees.Charon.Authorization.Users;
 using Pensees.Charon.Configuration;
+using Pensees.Charon.Features;
 using Pensees.Charon.Localization;
 using Pensees.Charon.MultiTenancy;
 using Pensees.Charon.Timing;
@@ -33,6 +34,8 @@ namespace Pensees.Charon
             AppRoleConfig.Configure(Configuration.Modules.Zero().RoleManagement);
 
             Configuration.Settings.Providers.Add<AppSettingProvider>();
+
+            Configuration.Features.Providers.Add<PesCloudFeatureProvider>();
         }
 
         public override void Initialize()
