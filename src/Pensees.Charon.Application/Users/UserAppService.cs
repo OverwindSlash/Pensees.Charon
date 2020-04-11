@@ -66,11 +66,6 @@ namespace Pensees.Charon.Users
             _smsAuthManager = smsAuthManager;
         }
 
-        /// <summary>
-        /// 创建用户
-        /// </summary>
-        /// <param name="input">创建用户所需Dto</param>
-        /// <returns>已创建用户的Dto</returns>
         public override async Task<UserDto> CreateAsync(CreateUserDto input)
         {
             CheckCreatePermission();

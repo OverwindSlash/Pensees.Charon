@@ -6,6 +6,7 @@ using Pensees.Charon.MultiTenancy.Dto;
 using Pensees.Charon.OperationAPIs.Dto;
 using Pensees.Charon.Organizations.Dto;
 using Pensees.Charon.Roles.Dto;
+using Pensees.Charon.Users.Dto;
 
 namespace Pensees.Charon.OperationAPIs
 {
@@ -23,13 +24,14 @@ namespace Pensees.Charon.OperationAPIs
         public ListResultDto<PermissionDto> GetTenantPermissions(int tenantId);
         
         public Task<RoleDto> CreateRoleInTenantAsync(int tenantId, CreateRoleDto input);
-        public Task<ListResultDto<RoleListDto>> GetRolesInTenantAsync(int tenantId, GetRolesInput input);
+        public Task<RoleDto> GetRoleInTenantAsync(int tenantId, EntityDto<int> input);
+        public Task<ListResultDto<RoleListDto>> GetAllRolesInTenantAsync(int tenantId, GetRolesInput input);
         public Task<RoleDto> UpdateRoleInTenantAsync(int tenantId, RoleDto input);
         public Task DeleteRoleInTenantAsync(int tenantId, EntityDto<int> input);
         
         public Task<OrganizationUnitDto> CreateOuInTenantAsync(CreateOrganizationUnitDto input);
         public Task<OrganizationUnitDto> GetOuInTenantAsync(int tenantId, EntityDto<long> input);
-        public Task<PagedResultDto<OrganizationUnitDto>> GetAllOuInTenantAsync(int tenantId, PagedResultRequestDto input);
+        public Task<PagedResultDto<OrganizationUnitDto>> GetAllOusInTenantAsync(int tenantId, PagedResultRequestDto input);
         public Task<OrganizationUnitDto> UpdateOuInTenantAsync(OrganizationUnitDto input);
         public Task DeleteOuInTenantAsync(int tenantId, EntityDto<long> input);
 
@@ -37,5 +39,7 @@ namespace Pensees.Charon.OperationAPIs
         public Task RemoveRoleFromOrganizationUnitAsync(int tenantId, SetOrganizationUnitRoleDto input);
         public Task AddUserToOrganizationAsync(int tenantId, SetOrganizationUnitUserDto input);
         public Task RemoveUserToOrganizationAsync(int tenantId, SetOrganizationUnitUserDto input);
+
+        //public Task<UserDto> CreateUserInTenantAsync(int tenantId, CreateUserDto input);
     }
 }

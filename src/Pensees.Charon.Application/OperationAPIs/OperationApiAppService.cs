@@ -1,5 +1,4 @@
-﻿using System;
-using Abp.Application.Features;
+﻿using Abp.Application.Features;
 using Abp.Application.Services;
 using Abp.Application.Services.Dto;
 using Abp.Authorization;
@@ -11,6 +10,7 @@ using Abp.IdentityFramework;
 using Abp.Linq.Extensions;
 using Abp.Localization;
 using Abp.Organizations;
+using Abp.UI;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Pensees.Charon.Authorization.Roles;
@@ -18,14 +18,14 @@ using Pensees.Charon.Authorization.Users;
 using Pensees.Charon.MultiTenancy;
 using Pensees.Charon.MultiTenancy.Dto;
 using Pensees.Charon.OperationAPIs.Dto;
-using Pensees.Charon.Organizations;
 using Pensees.Charon.Organizations.Dto;
 using Pensees.Charon.Roles.Dto;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
-using Abp.UI;
+using Pensees.Charon.Users.Dto;
 
 namespace Pensees.Charon.OperationAPIs
 {
@@ -66,6 +66,7 @@ namespace Pensees.Charon.OperationAPIs
             _organizationUnitManager = organizationUnitManager;
         }
 
+        #region Tenant Methods
         public Task<TenantDto> CreateTenantAsync(CreateTenantDto input)
         {
             return _tenantAppService.CreateAsync(input);
@@ -95,7 +96,9 @@ namespace Pensees.Charon.OperationAPIs
         {
             return _tenantAppService.ActivateTenant(input);
         }
+        #endregion
 
+        #region Feature & Permission Methods
         public List<FeatureDto> ListAllFeatures()
         {
             var features = _featureManager.GetAll();
@@ -149,7 +152,9 @@ namespace Pensees.Charon.OperationAPIs
                     ObjectMapper.Map<List<PermissionDto>>(permissions).OrderBy(p => p.DisplayName).ToList());
             }
         }
+        #endregion
 
+        #region Role Methods
         public async Task<RoleDto> CreateRoleInTenantAsync(int tenantId, CreateRoleDto input)
         {
             var role = ObjectMapper.Map<Role>(input);
@@ -170,7 +175,23 @@ namespace Pensees.Charon.OperationAPIs
             return ObjectMapper.Map<RoleDto>(role);
         }
 
-        public async Task<ListResultDto<RoleListDto>> GetRolesInTenantAsync(int tenantId, GetRolesInput input)
+        public async Task<RoleDto> GetRoleInTenantAsync(int tenantId, EntityDto<int> input)
+        {
+            using (CurrentUnitOfWork.SetTenantId(tenantId))
+            {
+                try
+                {
+                    var entity = await _roleManager.GetRoleByIdAsync(input.Id);
+                    return ObjectMapper.Map<RoleDto>(entity);
+                }
+                catch (Exception exception)
+                {
+                    throw new UserFriendlyException(exception.Message);
+                }
+            }
+        }
+
+        public async Task<ListResultDto<RoleListDto>> GetAllRolesInTenantAsync(int tenantId, GetRolesInput input)
         {
             using (CurrentUnitOfWork.SetTenantId(tenantId))
             {
@@ -222,7 +243,9 @@ namespace Pensees.Charon.OperationAPIs
                 CheckErrors(await _roleManager.DeleteAsync(role));
             }
         }
+        #endregion
 
+        #region Organization Methods
         public async Task<OrganizationUnitDto> CreateOuInTenantAsync(CreateOrganizationUnitDto input)
         {
             using (CurrentUnitOfWork.SetTenantId(input.TenantId))
@@ -250,7 +273,7 @@ namespace Pensees.Charon.OperationAPIs
             }
         }
 
-        public async Task<PagedResultDto<OrganizationUnitDto>> GetAllOuInTenantAsync(int tenantId, PagedResultRequestDto input)
+        public async Task<PagedResultDto<OrganizationUnitDto>> GetAllOusInTenantAsync(int tenantId, PagedResultRequestDto input)
         {
             using (CurrentUnitOfWork.SetTenantId(tenantId))
             {
@@ -403,7 +426,53 @@ namespace Pensees.Charon.OperationAPIs
 
                 await _userManager.RemoveFromOrganizationUnitAsync(input.UserId, input.OrganizationUnitId);
             }
-        }
+        } 
+        #endregion
+
+        //public async Task<UserDto> CreateUserInTenantAsync(int tenantId, CreateUserDto input)
+        //{
+        //    using (CurrentUnitOfWork.SetTenantId(tenantId))
+        //    {
+        //        var user = ObjectMapper.Map<User>(input);
+
+        //        user.TenantId = AbpSession.TenantId;
+        //        user.IsEmailConfirmed = true;
+
+        //        await _userManager.InitializeOptionsAsync(AbpSession.TenantId);
+
+        //        CheckErrors(await _userManager.CreateAsync(user, input.Password));
+
+        //        // if (input.RoleNames != null)
+        //        // {
+        //        //     CheckErrors(await _userManager.SetRolesAsync(user, input.RoleNames));
+        //        // }
+
+        //        foreach (string orgUnitName in input.OrgUnitNames)
+        //        {
+        //            OrganizationUnit ou = _orgUnitRepository.FirstOrDefault(
+        //                ou => ou.DisplayName.ToLower() == orgUnitName.ToLower());
+
+        //            if (ou == null)
+        //            {
+        //                continue;
+        //            }
+
+        //            await AddUserToOuAndSetRoleAsync(user, ou);
+        //        }
+
+        //        CurrentUnitOfWork.SaveChanges();
+
+        //        return ObjectMapper.Map<UserDto>(user);
+        //    }
+        //}
+
+        //private async Task AddUserToOuAndSetRoleAsync(User user, OrganizationUnit ou)
+        //{
+        //    await _userManager.AddToOrganizationUnitAsync(user, ou);
+
+        //    var roles = await _roleManager.GetRolesInOrganizationUnit(ou);
+        //    CheckErrors(await _userManager.AddToRolesAsync(user, roles.Select(r => r.NormalizedName).ToArray()));
+        //}
 
         protected virtual void CheckErrors(IdentityResult identityResult)
         {
