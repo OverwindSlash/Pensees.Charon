@@ -40,6 +40,10 @@ namespace Pensees.Charon.OperationAPIs
         public Task AddUserToOrganizationAsync(int tenantId, SetOrganizationUnitUserDto input);
         public Task RemoveUserToOrganizationAsync(int tenantId, SetOrganizationUnitUserDto input);
 
-        //public Task<UserDto> CreateUserInTenantAsync(int tenantId, CreateUserDto input);
+        public Task<UserDto> CreateUserInTenantAsync(int tenantId, CreateUserDto input);
+        public Task<UserDto> GetUserInTenantAsync(int tenantId, EntityDto<long> input);
+        public Task<UserDto> UpdateUserInTenantAsync(int tenantId, UserDto input);
+        public Task DeleteUserInTenantAsync(int tenantId, EntityDto<long> input);
+        public Task<bool> ActivateUserInTenantAsync(int tenantId, ActivateUserDto input);
     }
 }

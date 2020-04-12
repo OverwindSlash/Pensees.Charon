@@ -426,53 +426,123 @@ namespace Pensees.Charon.OperationAPIs
 
                 await _userManager.RemoveFromOrganizationUnitAsync(input.UserId, input.OrganizationUnitId);
             }
-        } 
+        }
         #endregion
 
-        //public async Task<UserDto> CreateUserInTenantAsync(int tenantId, CreateUserDto input)
-        //{
-        //    using (CurrentUnitOfWork.SetTenantId(tenantId))
-        //    {
-        //        var user = ObjectMapper.Map<User>(input);
+        public async Task<UserDto> CreateUserInTenantAsync(int tenantId, CreateUserDto input)
+        {
+            using (CurrentUnitOfWork.SetTenantId(tenantId))
+            {
+                var user = ObjectMapper.Map<User>(input);
 
-        //        user.TenantId = AbpSession.TenantId;
-        //        user.IsEmailConfirmed = true;
+                user.TenantId = AbpSession.TenantId;
+                user.IsEmailConfirmed = true;
 
-        //        await _userManager.InitializeOptionsAsync(AbpSession.TenantId);
+                await _userManager.InitializeOptionsAsync(AbpSession.TenantId);
 
-        //        CheckErrors(await _userManager.CreateAsync(user, input.Password));
+                CheckErrors(await _userManager.CreateAsync(user, input.Password));
 
-        //        // if (input.RoleNames != null)
-        //        // {
-        //        //     CheckErrors(await _userManager.SetRolesAsync(user, input.RoleNames));
-        //        // }
+                // if (input.RoleNames != null)
+                // {
+                //     CheckErrors(await _userManager.SetRolesAsync(user, input.RoleNames));
+                // }
 
-        //        foreach (string orgUnitName in input.OrgUnitNames)
-        //        {
-        //            OrganizationUnit ou = _orgUnitRepository.FirstOrDefault(
-        //                ou => ou.DisplayName.ToLower() == orgUnitName.ToLower());
+                foreach (string orgUnitName in input.OrgUnitNames)
+                {
+                    OrganizationUnit ou = _orgUnitRepository.FirstOrDefault(
+                        ou => ou.DisplayName.ToLower() == orgUnitName.ToLower());
 
-        //            if (ou == null)
-        //            {
-        //                continue;
-        //            }
+                    if (ou == null)
+                    {
+                        continue;
+                    }
 
-        //            await AddUserToOuAndSetRoleAsync(user, ou);
-        //        }
+                    await AddUserToOuAndSetRoleAsync(user, ou);
+                }
 
-        //        CurrentUnitOfWork.SaveChanges();
+                CurrentUnitOfWork.SaveChanges();
 
-        //        return ObjectMapper.Map<UserDto>(user);
-        //    }
-        //}
+                return ObjectMapper.Map<UserDto>(user);
+            }
+        }
 
-        //private async Task AddUserToOuAndSetRoleAsync(User user, OrganizationUnit ou)
-        //{
-        //    await _userManager.AddToOrganizationUnitAsync(user, ou);
+        private async Task AddUserToOuAndSetRoleAsync(User user, OrganizationUnit ou)
+        {
+            await _userManager.AddToOrganizationUnitAsync(user, ou);
 
-        //    var roles = await _roleManager.GetRolesInOrganizationUnit(ou);
-        //    CheckErrors(await _userManager.AddToRolesAsync(user, roles.Select(r => r.NormalizedName).ToArray()));
-        //}
+            var roles = await _roleManager.GetRolesInOrganizationUnit(ou);
+            CheckErrors(await _userManager.AddToRolesAsync(user, roles.Select(r => r.NormalizedName).ToArray()));
+        }
+
+        public async Task<UserDto> GetUserInTenantAsync(int tenantId, EntityDto<long> input)
+        {
+            using (CurrentUnitOfWork.SetTenantId(tenantId))
+            {
+                var entity = await _userManager.GetUserByIdAsync(input.Id);
+
+                return ObjectMapper.Map<UserDto>(entity);
+            }
+        }
+
+        public async Task<UserDto> UpdateUserInTenantAsync(int tenantId, UserDto input)
+        {
+            using (CurrentUnitOfWork.SetTenantId(tenantId))
+            {
+                var user = await _userManager.GetUserByIdAsync(input.Id);
+
+                ObjectMapper.Map(input, user);
+                user.SetNormalizedNames();
+
+                CheckErrors(await _userManager.UpdateAsync(user));
+
+                // if (input.RoleNames != null)
+                // {
+                //     CheckErrors(await _userManager.SetRolesAsync(user, input.RoleNames));
+                // }
+
+                if (input.OrgUnitNames != null)
+                {
+                    //var ous = await _userManager.GetOrganizationUnitsAsync(user);
+
+                    var ous = _orgUnitRepository.GetAll()
+                        .Where(ou => input.OrgUnitNames.Contains(ou.DisplayName)).ToList();
+
+                    foreach (OrganizationUnit ou in ous)
+                    {
+                        await AddUserToOuAndSetRoleAsync(user, ou);
+                    }
+                }
+
+                return await GetUserInTenantAsync(tenantId, input);
+            }
+        }
+
+        public async Task DeleteUserInTenantAsync(int tenantId, EntityDto<long> input)
+        {
+            using (CurrentUnitOfWork.SetTenantId(tenantId))
+            {
+                var user = await _userManager.GetUserByIdAsync(input.Id);
+                await _userManager.DeleteAsync(user);
+            }
+        }
+
+        public async Task<bool> ActivateUserInTenantAsync(int tenantId, ActivateUserDto input)
+        {
+            using (CurrentUnitOfWork.SetTenantId(tenantId))
+            {
+                var user = await _userManager.GetUserByIdAsync(input.UserId);
+                if (user == null)
+                {
+                    return false;
+                }
+
+                user.IsActive = input.IsActive;
+
+                CheckErrors(await _userManager.UpdateAsync(user));
+
+                return true;
+            }
+        }
 
         protected virtual void CheckErrors(IdentityResult identityResult)
         {
