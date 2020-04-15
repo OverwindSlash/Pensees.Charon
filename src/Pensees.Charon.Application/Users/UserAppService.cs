@@ -340,6 +340,11 @@ namespace Pensees.Charon.Users
             CurrentUnitOfWork.SaveChanges();
             return true;
         }
+
+        public override Task<PagedResultDto<UserDto>> GetAllAsync(PagedUserResultRequestDto input)
+        {
+            return base.GetAllAsync(input);
+        }
     }
 }
 

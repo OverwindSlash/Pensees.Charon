@@ -21,6 +21,7 @@ namespace Pensees.Charon.OperationAPIs
         
         public List<FeatureDto> ListAllFeatures();
         public Task<bool> EnableFeatureForTenantAsync(EnableFeatureDto input);
+        public Task<List<FeatureDto>> ListAllFeaturesInTenant(int tenantId);
         public ListResultDto<PermissionDto> GetTenantPermissions(int tenantId);
         
         public Task<RoleDto> CreateRoleInTenantAsync(int tenantId, CreateRoleDto input);
@@ -41,6 +42,8 @@ namespace Pensees.Charon.OperationAPIs
         public Task RemoveUserToOrganizationAsync(int tenantId, SetOrganizationUnitUserDto input);
 
         public Task<UserDto> CreateUserInTenantAsync(int tenantId, CreateUserDto input);
+        public Task<UserDto> CreateAdminUserInTenantAsync(int tenantId, CreateUserDto input);
+        public Task<List<UserDto>> GetAllAdminUserInTenantAsync(int tenantId);
         public Task<UserDto> GetUserInTenantAsync(int tenantId, EntityDto<long> input);
         public Task<UserDto> UpdateUserInTenantAsync(int tenantId, UserDto input);
         public Task DeleteUserInTenantAsync(int tenantId, EntityDto<long> input);

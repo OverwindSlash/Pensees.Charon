@@ -16,6 +16,9 @@ namespace Pensees.Charon.MultiTenancy
         [StringLength(AbpUserBase.MaxPhoneNumberLength)]
         public string PhoneNumber { get; set; }
 
+        [StringLength(AbpUserBase.MaxEmailAddressLength)]
+        public string Address { get; set; }
+
         public Tenant()
         {            
         }

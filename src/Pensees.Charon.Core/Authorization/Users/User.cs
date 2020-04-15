@@ -1,9 +1,8 @@
-﻿using System;
+﻿using Abp.Authorization.Users;
+using Abp.Extensions;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using Abp.Authorization.Users;
-using Abp.Extensions;
-using Abp.Organizations;
 
 namespace Pensees.Charon.Authorization.Users
 {

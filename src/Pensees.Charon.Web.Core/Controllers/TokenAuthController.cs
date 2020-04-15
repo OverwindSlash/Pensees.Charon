@@ -1,27 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Abp.Authorization;
+﻿using Abp.Authorization;
 using Abp.Authorization.Users;
 using Abp.Domain.Repositories;
 using Abp.Domain.Uow;
 using Abp.MultiTenancy;
 using Abp.Runtime.Security;
 using Abp.UI;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Pensees.Charon.Authentication.External;
 using Pensees.Charon.Authentication.JwtBearer;
 using Pensees.Charon.Authorization;
 using Pensees.Charon.Authorization.AuthCode;
 using Pensees.Charon.Authorization.Users;
+using Pensees.Charon.Models;
 using Pensees.Charon.Models.TokenAuth;
 using Pensees.Charon.MultiTenancy;
 using Pensees.Charon.Validation;
+using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Pensees.Charon.Controllers
 {
@@ -150,6 +151,30 @@ namespace Pensees.Charon.Controllers
 
             return await _smsAuthManager.AuthenticateSmsCode(phoneNumber, smsAuthCode);
         }
+
+        [HttpPost]
+        [AbpAuthorize(PermissionNames.Pages_Tenants)]
+        public async Task<string> GetTenantAdminToken([FromBody]GetTenantAdminToken input)
+        {
+            var tenancyName = _tenantCache.Get(input.TenantId).TenancyName;
+
+            var loginResult = await GetLoginResultAsync(
+                AbpUserBase.AdminUserName,
+                Pensees.Charon.Authorization.Users.User.DefaultPassword,
+                tenancyName
+            );
+
+            int? tenantId = null;
+            if (loginResult.Tenant != null)
+            {
+                tenantId = loginResult.Tenant.Id;
+            }
+
+            var accessToken = CreateAccessToken(CreateJwtClaims(loginResult.Identity, tenantId));
+
+            return accessToken;
+        }
+
 
         [HttpGet]
         public List<ExternalLoginProviderInfoModel> GetExternalAuthenticationProviders()

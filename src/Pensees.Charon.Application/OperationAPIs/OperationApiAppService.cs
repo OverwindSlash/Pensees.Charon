@@ -2,6 +2,7 @@
 using Abp.Application.Services;
 using Abp.Application.Services.Dto;
 using Abp.Authorization;
+using Abp.Collections.Extensions;
 using Abp.Configuration.Startup;
 using Abp.Dependency;
 using Abp.Domain.Repositories;
@@ -9,10 +10,12 @@ using Abp.Extensions;
 using Abp.IdentityFramework;
 using Abp.Linq.Extensions;
 using Abp.Localization;
+using Abp.MultiTenancy;
 using Abp.Organizations;
 using Abp.UI;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Pensees.Charon.Authorization;
 using Pensees.Charon.Authorization.Roles;
 using Pensees.Charon.Authorization.Users;
 using Pensees.Charon.MultiTenancy;
@@ -20,25 +23,29 @@ using Pensees.Charon.MultiTenancy.Dto;
 using Pensees.Charon.OperationAPIs.Dto;
 using Pensees.Charon.Organizations.Dto;
 using Pensees.Charon.Roles.Dto;
+using Pensees.Charon.Users.Dto;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
-using Pensees.Charon.Users.Dto;
 
 namespace Pensees.Charon.OperationAPIs
 {
+    [AbpAuthorize(PermissionNames.Pages_Tenants)]
     public class OperationApiAppService : ApplicationService, IOperationApiAppService
     {
         private readonly ITenantAppService _tenantAppService;
         private readonly TenantManager _tenantManager;
         private readonly IFeatureManager _featureManager;
+        private readonly IRepository<EditionFeatureSetting, long> _editionFeatureRepository;
         private readonly ILocalizationManager _localizationManager;
         private readonly IIocManager _iocManager;
         private readonly IAuthorizationConfiguration _authorizationConfiguration;
         private readonly RoleManager _roleManager;
         private readonly UserManager _userManager;
+        private readonly IRepository<User, long> _userRepository;
         private readonly IRepository<OrganizationUnit, long> _orgUnitRepository;
         private readonly OrganizationUnitManager _organizationUnitManager;
 
@@ -46,22 +53,26 @@ namespace Pensees.Charon.OperationAPIs
             ITenantAppService tenantAppService,
             TenantManager tenantManager,
             IFeatureManager featureManager,
+            IRepository<EditionFeatureSetting, long> editionFeatureRepository,
             ILocalizationManager localizationManager,
             IIocManager iocManager,
             IAuthorizationConfiguration authorizationConfiguration,
             RoleManager roleManager,
             UserManager userManager,
+            IRepository<User, long> userRepository,
             IRepository<OrganizationUnit, long> orgUnitRepository,
             OrganizationUnitManager organizationUnitManager)
         {
             _tenantAppService = tenantAppService;
             _tenantManager = tenantManager;
             _featureManager = featureManager;
+            _editionFeatureRepository = editionFeatureRepository;
             _localizationManager = localizationManager;
             _iocManager = iocManager;
             _authorizationConfiguration = authorizationConfiguration;
             _roleManager = roleManager;
             _userManager = userManager;
+            _userRepository = userRepository;
             _orgUnitRepository = orgUnitRepository;
             _organizationUnitManager = organizationUnitManager;
         }
@@ -125,18 +136,63 @@ namespace Pensees.Charon.OperationAPIs
                 return false;
             }
 
-            foreach (var featureName in input.FeatureNames)
+            var allFeatures = _featureManager.GetAll();
+            foreach (var feature in allFeatures)
             {
-                var feature = _featureManager.GetOrNull(featureName);
-                if (feature == null)
+                if (input.FeatureNames.Contains(feature.Name))
                 {
-                    continue;
+                    await _tenantManager.SetFeatureValueAsync(tenant.Id, feature.Name, "true");
                 }
-
-                await _tenantManager.SetFeatureValueAsync(tenant.Id, feature.Name, input.IsEnable.ToString());
+                else
+                {
+                    await _tenantManager.SetFeatureValueAsync(tenant.Id, feature.Name, "false");
+                }
             }
 
-            return true;
+            await CurrentUnitOfWork.SaveChangesAsync();
+
+            using (CurrentUnitOfWork.SetTenantId(tenant.Id))
+            {
+                // Grant all permissions to admin role
+                var adminRole = _roleManager.Roles.Single(r => r.Name == StaticRoleNames.Tenants.Admin);
+
+                using (var featureDependencyContext = _iocManager.ResolveAsDisposable<FeatureDependencyContext>())
+                {
+                    var featureDependencyContextObject = featureDependencyContext.Object;
+                    featureDependencyContextObject.TenantId = tenant.Id;
+
+                    var permissions = PermissionManager.GetAllPermissions(adminRole.GetMultiTenancySide())
+                        .Where(permission =>
+                            permission.FeatureDependency == null ||
+                            permission.FeatureDependency.IsSatisfied(featureDependencyContextObject)
+                        ).ToList();
+
+                    await _roleManager.SetGrantedPermissionsAsync(adminRole, permissions);
+                }
+            }
+
+            return true;                                                                                                         
+        }
+
+        public async Task<List<FeatureDto>> ListAllFeaturesInTenant(int tenantId)
+        {
+            var features = await _tenantManager.GetFeatureValuesAsync(tenantId);
+
+            List<FeatureDto> featureDtos = new List<FeatureDto>();
+            foreach (var feature in features)
+            {
+                if (feature.Value == "true")
+                {
+                    Feature entity = _featureManager.Get(feature.Name);
+                    featureDtos.Add(new FeatureDto()
+                    {
+                        Name = entity.Name,
+                        DisplayName = _localizationManager.GetString((LocalizableString)entity.DisplayName)
+                    });
+                }
+            }
+
+            return featureDtos;
         }
 
 
@@ -252,12 +308,15 @@ namespace Pensees.Charon.OperationAPIs
             {
                 if (string.IsNullOrEmpty(input.Code))
                 {
-                    input.Code = _organizationUnitManager.GetNextChildCode(input.ParentId);
+                    input.Code = await _organizationUnitManager.GetNextChildCodeAsync(input.ParentId);
                 }
 
                 OrganizationUnit entity = ObjectMapper.Map<OrganizationUnit>(input);
 
-                await _organizationUnitManager.CreateAsync(entity);
+                //await _organizationUnitManager.CreateAsync(entity);
+
+                long id = await _orgUnitRepository.InsertAndGetIdAsync(entity);
+                entity.Id = id;
 
                 return ObjectMapper.Map<OrganizationUnitDto>(entity);
             }
@@ -429,6 +488,7 @@ namespace Pensees.Charon.OperationAPIs
         }
         #endregion
 
+        #region User Methods
         public async Task<UserDto> CreateUserInTenantAsync(int tenantId, CreateUserDto input)
         {
             using (CurrentUnitOfWork.SetTenantId(tenantId))
@@ -466,6 +526,26 @@ namespace Pensees.Charon.OperationAPIs
             }
         }
 
+        public async Task<UserDto> CreateAdminUserInTenantAsync(int tenantId, CreateUserDto input)
+        {
+            input.OrgUnitNames = input.OrgUnitNames.Append("AdminGroup").ToArray();
+
+            return await CreateUserInTenantAsync(tenantId, input);
+        }
+
+        public async Task<List<UserDto>> GetAllAdminUserInTenantAsync(int tenantId)
+        {
+            using (CurrentUnitOfWork.SetTenantId(tenantId))
+            {
+
+                var adminRole = await _roleManager.GetRoleByNameAsync(StaticRoleNames.Tenants.Admin);
+
+                IList<User> adminUsers = await _userManager.GetUsersInRoleAsync(adminRole.Name);
+
+                return ObjectMapper.Map<List<UserDto>>(adminUsers);
+            }
+        }
+
         private async Task AddUserToOuAndSetRoleAsync(User user, OrganizationUnit ou)
         {
             await _userManager.AddToOrganizationUnitAsync(user, ou);
@@ -478,9 +558,21 @@ namespace Pensees.Charon.OperationAPIs
         {
             using (CurrentUnitOfWork.SetTenantId(tenantId))
             {
-                var entity = await _userManager.GetUserByIdAsync(input.Id);
+                var user = await _userManager.GetUserByIdAsync(input.Id);
 
-                return ObjectMapper.Map<UserDto>(entity);
+                UserDto dto = ObjectMapper.Map<UserDto>(user);
+
+                IList<string> roles = await _userManager.GetRolesAsync(user);
+                dto.RoleNames = roles.ToArray();
+
+                //List<Permission> permissions = new List<Permission>();
+                //foreach (string roleName in dto.RoleNames)
+                //{
+                //    Role role = await _roleManager.GetRoleByNameAsync(roleName);
+                //    permissions.AddRange(await _roleManager.GetGrantedPermissionsAsync(role.Id));
+                //}
+
+                return dto;
             }
         }
 
@@ -542,7 +634,8 @@ namespace Pensees.Charon.OperationAPIs
 
                 return true;
             }
-        }
+        } 
+        #endregion
 
         protected virtual void CheckErrors(IdentityResult identityResult)
         {

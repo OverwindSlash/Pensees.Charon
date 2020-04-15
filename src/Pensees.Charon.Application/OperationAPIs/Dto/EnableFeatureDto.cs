@@ -8,7 +8,7 @@ namespace Pensees.Charon.OperationAPIs.Dto
     {
         public int TenantId { get; set; }
 
-        public bool IsEnable { get; set; }
+        //public bool IsEnable { get; set; }
 
         public List<string> FeatureNames { get; set; }
     }

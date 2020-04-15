@@ -14,6 +14,7 @@ using Pensees.Charon.Editions;
 using Pensees.Charon.MultiTenancy.Dto;
 using System.Linq;
 using System.Threading.Tasks;
+using Abp.Organizations;
 
 namespace Pensees.Charon.MultiTenancy
 {
@@ -24,6 +25,8 @@ namespace Pensees.Charon.MultiTenancy
         private readonly EditionManager _editionManager;
         private readonly UserManager _userManager;
         private readonly RoleManager _roleManager;
+        private readonly OrganizationUnitManager _ouManager;
+        private readonly IRepository<OrganizationUnit, long> _ouRepository;
         private readonly IAbpZeroDbMigrator _abpZeroDbMigrator;
 
         public TenantAppService(
@@ -32,6 +35,8 @@ namespace Pensees.Charon.MultiTenancy
             EditionManager editionManager,
             UserManager userManager,
             RoleManager roleManager,
+            OrganizationUnitManager ouManager,
+            IRepository<OrganizationUnit, long> ouRepository,
             IAbpZeroDbMigrator abpZeroDbMigrator)
             : base(repository)
         {
@@ -39,6 +44,8 @@ namespace Pensees.Charon.MultiTenancy
             _editionManager = editionManager;
             _userManager = userManager;
             _roleManager = roleManager;
+            _ouManager = ouManager;
+            _ouRepository = ouRepository;
             _abpZeroDbMigrator = abpZeroDbMigrator;
         }
 
@@ -75,6 +82,18 @@ namespace Pensees.Charon.MultiTenancy
                 // Grant all permissions to admin role
                 var adminRole = _roleManager.Roles.Single(r => r.Name == StaticRoleNames.Tenants.Admin);
                 await _roleManager.GrantAllPermissionsAsync(adminRole);
+
+                // Create admin Organization Unit
+                string code = _ouManager.GetNextChildCode(null);
+                OrganizationUnit adminOu = new OrganizationUnit()
+                {
+                    TenantId = tenant.Id,
+                    ParentId = null,
+                    DisplayName = "AdminGroup",
+                    Code = code 
+                };
+                adminOu.Id = await _ouRepository.InsertAndGetIdAsync(adminOu);
+                await _roleManager.SetOrganizationUnitsAsync(adminRole, new[] {adminOu.Id});
 
                 // Create admin user for the tenant
                 var adminUser = User.CreateTenantAdminUser(tenant.Id, input.AdminEmailAddress);
