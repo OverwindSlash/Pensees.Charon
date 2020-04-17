@@ -1,22 +1,26 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Abp.Authorization.Users;
-using Abp.MultiTenancy;
+﻿using Abp.MultiTenancy;
 using Pensees.Charon.Authorization.Users;
+using System.ComponentModel.DataAnnotations;
 
 namespace Pensees.Charon.MultiTenancy
 {
     public class Tenant : AbpTenant<User>
     {
-        [StringLength(AbpTenantBase.MaxNameLength)]
+        public const int MaxLogoLength = 128;
+        public const int MaxContactLength = 128;
+        public const int MaxPhoneNumberLength = 32;
+        public const int MaxAddressLength = 256;
+
+        [StringLength(MaxLogoLength)]
         public string Logo { get; set; }
 
-        [StringLength(AbpTenantBase.MaxNameLength)]
+        [StringLength(MaxContactLength)]
         public string Contact { get; set; }
 
-        [StringLength(AbpUserBase.MaxPhoneNumberLength)]
+        [StringLength(MaxPhoneNumberLength)]
         public string PhoneNumber { get; set; }
 
-        [StringLength(AbpUserBase.MaxEmailAddressLength)]
+        [StringLength(MaxAddressLength)]
         public string Address { get; set; }
 
         public Tenant()

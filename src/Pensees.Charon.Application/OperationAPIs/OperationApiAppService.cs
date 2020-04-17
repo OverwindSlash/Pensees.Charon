@@ -200,6 +200,9 @@ namespace Pensees.Charon.OperationAPIs
         {
             using (CurrentUnitOfWork.SetTenantId(tenantId))
             {
+                var result = PermissionManager.GetAllPermissions();
+
+
                 PermissionManager permissionManager = new PermissionManager(_iocManager, _authorizationConfiguration, UnitOfWorkManager);
                 permissionManager.Initialize();
                 var permissions = permissionManager.GetAllPermissions();
@@ -537,12 +540,25 @@ namespace Pensees.Charon.OperationAPIs
         {
             using (CurrentUnitOfWork.SetTenantId(tenantId))
             {
-
                 var adminRole = await _roleManager.GetRoleByNameAsync(StaticRoleNames.Tenants.Admin);
 
                 IList<User> adminUsers = await _userManager.GetUsersInRoleAsync(adminRole.Name);
 
-                return ObjectMapper.Map<List<UserDto>>(adminUsers);
+                List<UserDto> userDtos = new List<UserDto>();
+                foreach (User adminUser in adminUsers)
+                {
+                    UserDto dto = ObjectMapper.Map<UserDto>(adminUser);
+
+                    IList<string> roles = await _userManager.GetRolesAsync(adminUser);
+                    dto.RoleNames = roles.ToArray();
+
+                    IList<OrganizationUnit> organizationUnits = await _userManager.GetOrganizationUnitsAsync(adminUser);
+                    dto.OrgUnitNames = organizationUnits.Select(ou => ou.DisplayName).ToArray();
+
+                    userDtos.Add(dto);
+                }
+
+                return userDtos;
             }
         }
 
@@ -552,6 +568,14 @@ namespace Pensees.Charon.OperationAPIs
 
             var roles = await _roleManager.GetRolesInOrganizationUnit(ou);
             CheckErrors(await _userManager.AddToRolesAsync(user, roles.Select(r => r.NormalizedName).ToArray()));
+        }
+
+        private async Task RemoveUserFromOuAndResetRoleAsync(User user, OrganizationUnit ou)
+        {
+            var roles = await _roleManager.GetRolesInOrganizationUnit(ou);
+            CheckErrors(await _userManager.RemoveFromRolesAsync(user, roles.Select(r => r.NormalizedName).ToArray()));
+
+            await _userManager.RemoveFromOrganizationUnitAsync(user, ou);
         }
 
         public async Task<UserDto> GetUserInTenantAsync(int tenantId, EntityDto<long> input)
@@ -564,6 +588,9 @@ namespace Pensees.Charon.OperationAPIs
 
                 IList<string> roles = await _userManager.GetRolesAsync(user);
                 dto.RoleNames = roles.ToArray();
+
+                IList<OrganizationUnit> organizationUnits = await _userManager.GetOrganizationUnitsAsync(user);
+                dto.OrgUnitNames = organizationUnits.Select(ou => ou.DisplayName).ToArray();
 
                 //List<Permission> permissions = new List<Permission>();
                 //foreach (string roleName in dto.RoleNames)
@@ -594,12 +621,19 @@ namespace Pensees.Charon.OperationAPIs
 
                 if (input.OrgUnitNames != null)
                 {
-                    //var ous = await _userManager.GetOrganizationUnitsAsync(user);
+                    var existOus = await _userManager.GetOrganizationUnitsAsync(user);
+                    foreach (var organizationUnit in existOus)
+                    {
+                        await _userManager.RemoveFromOrganizationUnitAsync(user.Id, organizationUnit.Id);
+                        await RemoveUserFromOuAndResetRoleAsync(user, organizationUnit);
+                    }
 
-                    var ous = _orgUnitRepository.GetAll()
+                    await CurrentUnitOfWork.SaveChangesAsync();
+
+                    var newOus = _orgUnitRepository.GetAll()
                         .Where(ou => input.OrgUnitNames.Contains(ou.DisplayName)).ToList();
 
-                    foreach (OrganizationUnit ou in ous)
+                    foreach (OrganizationUnit ou in newOus)
                     {
                         await AddUserToOuAndSetRoleAsync(user, ou);
                     }

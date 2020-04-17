@@ -90,15 +90,6 @@ namespace Pensees.Charon.Web.Host.Startup
                 });
             });
 
-            // services.ConfigureSwaggerGen(options =>
-            // {
-            //     //Determine base path for the application.
-            //     var basePath = PlatformServices.Default.Application.ApplicationBasePath;
-            //
-            //     //Set the comments path for the swagger json and ui.
-            //     options.IncludeXmlComments(basePath + "\\Pensees.Charon.Application.xml");
-            // });
-
             // Configure Abp and Dependency Injection
             return services.AddAbp<CharonWebHostModule>(
                 // Configure Log4Net logging

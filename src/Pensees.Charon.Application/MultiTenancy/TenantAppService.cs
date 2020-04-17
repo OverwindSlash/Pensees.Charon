@@ -6,6 +6,7 @@ using Abp.Extensions;
 using Abp.IdentityFramework;
 using Abp.Linq.Extensions;
 using Abp.MultiTenancy;
+using Abp.Organizations;
 using Microsoft.AspNetCore.Identity;
 using Pensees.Charon.Authorization;
 using Pensees.Charon.Authorization.Roles;
@@ -14,7 +15,6 @@ using Pensees.Charon.Editions;
 using Pensees.Charon.MultiTenancy.Dto;
 using System.Linq;
 using System.Threading.Tasks;
-using Abp.Organizations;
 
 namespace Pensees.Charon.MultiTenancy
 {
@@ -100,6 +100,9 @@ namespace Pensees.Charon.MultiTenancy
                 await _userManager.InitializeOptionsAsync(tenant.Id);
                 CheckErrors(await _userManager.CreateAsync(adminUser, User.DefaultPassword));
                 await CurrentUnitOfWork.SaveChangesAsync(); // To get admin user's id
+
+                // Assign admin user to AdminGroup ou.
+                await _userManager.AddToOrganizationUnitAsync(adminUser, adminOu);
 
                 // Assign admin user to role!
                 CheckErrors(await _userManager.AddToRoleAsync(adminUser, adminRole.Name));

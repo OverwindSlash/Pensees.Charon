@@ -30,7 +30,7 @@ using Pensees.Charon.Authorization.AuthCode;
 namespace Pensees.Charon.Users
 {
     [AbpAuthorize(PermissionNames.Pages_Users)]
-    public class UserAppService : AsyncCrudAppService<User, UserDto, long, PagedUserResultRequestDto, CreateUserDto, UserDto>, IUserAppService
+    public class UserAppService : AsyncCrudAppService<User, UserDto, long, PagedUserResultRequestDto, CreateUserDto, UpdateUserDto>, IUserAppService
     {
         private readonly UserManager _userManager;
         private readonly RoleManager _roleManager;
@@ -102,7 +102,7 @@ namespace Pensees.Charon.Users
             return MapToEntityDto(user);
         }
 
-        public override async Task<UserDto> UpdateAsync(UserDto input)
+        public override async Task<UserDto> UpdateAsync(UpdateUserDto input)
         {
             CheckUpdatePermission();
 
@@ -207,11 +207,11 @@ namespace Pensees.Charon.Users
             return user;
         }
 
-        protected override void MapToEntity(UserDto input, User user)
-        {
-            ObjectMapper.Map(input, user);
-            user.SetNormalizedNames();
-        }
+        //protected override void MapToEntity(UserDto input, User user)
+        //{
+        //    ObjectMapper.Map(input, user);
+        //    user.SetNormalizedNames();
+        //}
 
         protected override UserDto MapToEntityDto(User user)
         {
